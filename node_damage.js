@@ -1,3 +1,4 @@
+// this isn't used at all. was just recording what I was seeing when scraping the data.min.json provided by maxroll
 const nodeDamage = {
     fire: {
         id: 208,
