@@ -17,7 +17,7 @@ let vulnerable;
 let critDamage;
 let globalMultipliers = [];
 
-const conditionalDamage = [208, 210, 915, 787, 789, 787, 784, 790, 933];
+//const conditionalDamage = [208, 210, 915, 787, 789, 787, 784, 790, 933];
 
 const data = JSON.parse(fs.readFileSync('data.min.json'));
 
@@ -48,6 +48,9 @@ for (const profile of JSON.parse(response.data.data).profiles) {
 
 console.log(JSON.stringify(allResults, null, '  '));
 console.log(`Best: "${best.profile}" (${best.dmg.toPrecision(4)}x)`);
+
+
+
 
 
 function calculateDamage(profile) {
