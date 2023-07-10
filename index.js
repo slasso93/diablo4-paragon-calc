@@ -40,7 +40,7 @@ for (const profile of JSON.parse(response.data.data).profiles) {
     globalMultipliers = [];
     console.log(profile.name);
     const profileDamage = calculateDamage(profile);
-    if (!best || best.dmg.lt(profileDamage.total)) {
+    if (!best || best.dmg < profileDamage.total) {
         best = {profile: profile.name, dmg: profileDamage.total};
     }
     allResults[profile.name] = profileDamage;
@@ -80,7 +80,7 @@ function calculateDamage(profile) {
         additive: +additiveBucket.toPrecision(4),
         vulnerable: +vulnerable.toPrecision(4),
         crit: +critMulti.toPrecision(4),
-        total: finalMultiplier
+        total: +finalMultiplier.toPrecision(4)
     };
 }
 
