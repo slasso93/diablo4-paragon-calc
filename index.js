@@ -3,7 +3,9 @@ import fs from 'fs';
 import stats from './base_stats.js';
 import Big from 'big.js';
 
-const buildLink = 'https://maxroll.gg/d4/planner/bt7u09gu';
+const buildLink = 'https://maxroll.gg/d4/planner/vd9g0925';
+//const buildLink = 'https://maxroll.gg/d4/planner/o36lk01r';
+let globalMultipliers = [];
 
 const d4Class = 'sorc';
 const damageType = 2; // 1 = fire, 2 = lit, 3 = cold
@@ -15,7 +17,6 @@ let strength, intelligence, willpower, dexterity;
 let additiveBucket;
 let vulnerable;
 let critDamage;
-let globalMultipliers = [];
 
 //const conditionalDamage = [208, 210, 915, 787, 789, 787, 784, 790, 933];
 
@@ -23,7 +24,7 @@ const data = JSON.parse(fs.readFileSync('data.min.json'));
 
 const profile = buildLink.split('/')[buildLink.split('/').length - 1];
 
-const response = await axios.get(`https://planners.maxroll.gg/profiles/d4/${profile}` + profile);
+const response = await axios.get(`https://planners.maxroll.gg/profiles/d4/${profile}`);
 
 let best;
 const allResults = {};
@@ -162,7 +163,7 @@ function applySecondaryRareBonuses(paragon, ParagonBoardEquipIndex) {
     }
     
     const glyph = data.paragonGlyphs[paragon.glyph];
-    if ((glyph.affixes.includes("Nodes_BonusToRare") || glyph.affixes.includes("Nodes_BonusToNonPhysical")) && secondaryNodesEffects) {
+    if (glyph && (glyph.affixes.includes("Nodes_BonusToRare") || glyph.affixes.includes("Nodes_BonusToNonPhysical")) && secondaryNodesEffects) {
         applyGlyphs(paragon.id, secondaryNodesEffects, glyphPosition, paragon.glyph, paragon.glyphLevel, true);
     }
 }
@@ -196,17 +197,18 @@ function addStats(attribute, effectiveNess=1) {
 */
 function applyGlyphs(boardId, nodes, glyphPosition, glyphId, glyphLevel, majorOnly=false) {
     const glyph = data.paragonGlyphs[glyphId];
-
-    for (const affix of glyph.affixes) {
-        if (affix.startsWith('Power_'))  { // TODO: secondary effects of glyphs
-            //console.log('glyph multi not implemented yet'); // ex: multipliers of exploit/territorial, etc
-        } else if (affix.startsWith('DamageTo') || affix === 'Nodes_BonusToRare' 
-        || affix === 'Nodes_BonusToNonPhysical' || affix === 'MajorDestructionCritDamage_Dexterity_Side' ||
-            (affix.startsWith('ConjurationDamage') && skillType === 3) || 
-            (affix.startsWith('MasteryDamage') && skillType === 4)) { // conditional additive damages or rare bonuses (Tactician) 
-                applyBonusesInRadius(boardId, nodes, glyphPosition, glyphId, glyphLevel, affix, majorOnly);
-        } else {
-            //console.log('missing glyph', glyph); // TODO: adept, destruction, crackling energy (conditional skill damage core/mastery/etc)
+    if (glyph) {
+        for (const affix of glyph.affixes) {
+            if (affix.startsWith('Power_'))  { // TODO: secondary effects of glyphs
+                //console.log('glyph multi not implemented yet'); // ex: multipliers of exploit/territorial, etc
+            } else if (affix.startsWith('DamageTo') || affix === 'Nodes_BonusToRare' 
+            || affix === 'Nodes_BonusToNonPhysical' || affix === 'MajorDestructionCritDamage_Dexterity_Side' ||
+                (affix.startsWith('ConjurationDamage') && skillType === 3) || 
+                (affix.startsWith('MasteryDamage') && skillType === 4)) { // conditional additive damages or rare bonuses (Tactician) 
+                    applyBonusesInRadius(boardId, nodes, glyphPosition, glyphId, glyphLevel, affix, majorOnly);
+            } else {
+                //console.log('missing glyph', glyph); // TODO: adept, destruction, crackling energy (conditional skill damage core/mastery/etc)
+            }
         }
     }
 }
