@@ -2,14 +2,21 @@ import axios from 'axios';
 import fs from 'fs';
 import stats from './base_stats.js';
 import Big from 'big.js';
+import { json2csv } from 'json-2-csv';
 
-const buildLink = 'https://maxroll.gg/d4/planner/vd9g0925';
-//const buildLink = 'https://maxroll.gg/d4/planner/o36lk01r';
+//const buildLink = 'https://maxroll.gg/d4/planner/u2t00zbc'; // arc lash
+const buildLink = 'https://maxroll.gg/d4/planner/uz2w0zot'; // ice shard
+//const buildLink = 'https://maxroll.gg/d4/planner/vx640zvd'; // v4v compare
+// const buildLink = 'https://maxroll.gg/d4/planner/nrwt0nyg'; // other ice shards
+//const buildLink = 'https://maxroll.gg/d4/planner/m36v0zu5'; // has more blizzard builds
+//const buildLink = 'https://maxroll.gg/d4/planner/o2150ney'; // blizzard only
 let globalMultipliers = [];
+const intGearBonus = 0;
+const vulnGear = 0; // as a decimal. .96 = 96%
 
 const d4Class = 'sorc';
-const damageType = 2; // 1 = fire, 2 = lit, 3 = cold
-const skillType = 0; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
+const damageType = 3; // 1 = fire, 2 = lit, 3 = cold
+const skillType = 4; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
 
 
 const critChance = new Big(100);
@@ -31,12 +38,12 @@ const allResults = {};
 for (const profile of JSON.parse(response.data.data).profiles) {
     const critChance = new Big(100);
     strength =stats[d4Class]['strength'];
-    intelligence =stats[d4Class]['intelligence'];
+    intelligence =stats[d4Class]['intelligence'] + intGearBonus;
     willpower =stats[d4Class]['willpower'];
     dexterity =stats[d4Class]['dexterity'];
     
-    additiveBucket = new Big(1.0);
-    vulnerable = new Big(1.20);
+    additiveBucket = new Big(1.535);
+    vulnerable = new Big(1.2).add(vulnGear);
     critDamage = new Big(0.50);
     globalMultipliers = [];
     console.log(profile.name);
@@ -50,8 +57,13 @@ for (const profile of JSON.parse(response.data.data).profiles) {
 console.log(JSON.stringify(allResults, null, '  '));
 console.log(`Best: "${best.profile}" (${best.dmg.toPrecision(4)}x)`);
 
-
-
+const csv = await json2csv(Object.keys(allResults).map(e => {
+    return {
+        name: e,
+        ...allResults[e]
+    }
+}));
+fs.writeFileSync('results.csv', csv, {encoding: 'utf-8'});
 
 
 function calculateDamage(profile) {
@@ -69,7 +81,7 @@ function calculateDamage(profile) {
     const baseMulti = mainStatMulti.times(vulnerable).times(critMulti).times(additiveBucket);
     const finalMultiplier = globalMultipliers.reduce((prev, curr) => prev.times(curr), baseMulti);
 
-    console.log('main:', mainStatMulti);
+    console.log('main:', mainStatMulti.toNumber());
     console.log('additive:', additiveBucket.toPrecision(4));
     console.log('vulnerable:', vulnerable.toPrecision(4));
     console.log('crit:', critMulti.toPrecision(4));
@@ -127,6 +139,7 @@ function applySecondaryRareBonuses(paragon, ParagonBoardEquipIndex) {
             const requirements = node.thresholds[0];
             const attributes = data.paragonThresholds[requirements].attributes;
 
+            // TODO: dual requirements are wrong here
             let hasRequirements = true;
             for (const attribute of attributes) {    
                 const requiredValue = eval(attribute.value);
@@ -141,6 +154,8 @@ function applySecondaryRareBonuses(paragon, ParagonBoardEquipIndex) {
                 } else {
                     console.log('unknown requirements', requirements);
                 }
+                if (!hasRequirements)
+                    break;
             }
             if (hasRequirements) { // apply the bonus if all requirements are met
                 const bonusAttribute = node.attributes[0] // the "Major" bonus is always first and it's the one that is applied as bonus
@@ -201,13 +216,13 @@ function applyGlyphs(boardId, nodes, glyphPosition, glyphId, glyphLevel, majorOn
         for (const affix of glyph.affixes) {
             if (affix.startsWith('Power_'))  { // TODO: secondary effects of glyphs
                 //console.log('glyph multi not implemented yet'); // ex: multipliers of exploit/territorial, etc
-            } else if (affix.startsWith('DamageTo') || affix === 'Nodes_BonusToRare' 
-            || affix === 'Nodes_BonusToNonPhysical' || affix === 'MajorDestructionCritDamage_Dexterity_Side' ||
-                (affix.startsWith('ConjurationDamage') && skillType === 3) || 
+            } else if (affix.startsWith('DamageTo') || affix === 'Nodes_BonusToRare' ||
+                affix === 'Nodes_BonusToNonPhysical' || affix === 'MajorDestructionCritDamage_Dexterity_Side' ||
+                (affix.startsWith('ConjurationDamage') && skillType === 3) || affix === "DamageWhileHealthy_Willpower_Side" || 
                 (affix.startsWith('MasteryDamage') && skillType === 4)) { // conditional additive damages or rare bonuses (Tactician) 
                     applyBonusesInRadius(boardId, nodes, glyphPosition, glyphId, glyphLevel, affix, majorOnly);
             } else {
-                //console.log('missing glyph', glyph); // TODO: adept, destruction, crackling energy (conditional skill damage core/mastery/etc)
+                console.log('missing glyph', glyph); // TODO: adept, destruction, crackling energy (conditional skill damage core/mastery/etc)
             }
         }
     }
@@ -244,7 +259,7 @@ function applyBonusesInRadius(boardId, nodes, glyphPosition, glyph, glyphLevel, 
                         if (attribute.id === 210) {
                             if (!majorOnly || attribute.formula.includes("Major")) {
                                 const nodeBase = new Big(data.attributeFormulas[attribute.formula][0].formula);
-                                additiveBucket = additiveBucket.add(bonus.times(nodeBase)) ;
+                                additiveBucket = additiveBucket.add(bonus.times(nodeBase));
                             }
                         }
                     }
