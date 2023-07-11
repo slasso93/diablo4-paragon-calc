@@ -139,7 +139,6 @@ function applySecondaryRareBonuses(paragon, ParagonBoardEquipIndex) {
             const requirements = node.thresholds[0];
             const attributes = data.paragonThresholds[requirements].attributes;
 
-            // TODO: dual requirements are wrong here
             let hasRequirements = true;
             for (const attribute of attributes) {    
                 const requiredValue = eval(attribute.value);
