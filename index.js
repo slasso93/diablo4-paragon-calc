@@ -4,22 +4,33 @@ import stats from './base_stats.js';
 import Big from 'big.js';
 import { json2csv } from 'json-2-csv';
 
-//const buildLink = 'https://maxroll.gg/d4/planner/u2t00zbc'; // arc lash
-const buildLink = 'https://maxroll.gg/d4/planner/uz2w0zot'; // ice shard
+const testName = 'arc1';
+const buildLink = 'https://maxroll.gg/d4/planner/uyg80uxn'; // arc lash
+//const buildLink = 'https://maxroll.gg/d4/planner/uz2w0zot'; // ice shard
 //const buildLink = 'https://maxroll.gg/d4/planner/vx640zvd'; // v4v compare
-// const buildLink = 'https://maxroll.gg/d4/planner/nrwt0nyg'; // other ice shards
+//const buildLink = 'https://maxroll.gg/d4/planner/a4710anu'; // other ice shards
+//const buildLink = 'https://maxroll.gg/d4/planner/a6l40nt6'; // xps ice shards
 //const buildLink = 'https://maxroll.gg/d4/planner/m36v0zu5'; // has more blizzard builds
 //const buildLink = 'https://maxroll.gg/d4/planner/o2150ney'; // blizzard only
 let globalMultipliers = [];
-const intGearBonus = 0;
-const vulnGear = 0; // as a decimal. .96 = 96%
+
+const ignoreGearBonuses = false;
+const alwaysCrit = false;
+const intGearBonus = 196;
+const willGearBonus = 0;
+const strGearBonus = 0;
+const dexGearBonus = 0;
+
+const vulnGear = 86.2; 
+const critGear = 200.4;
+const critChanceGear = 31.7;
+const additiveGear = 0;
 
 const d4Class = 'sorc';
-const damageType = 3; // 1 = fire, 2 = lit, 3 = cold
-const skillType = 4; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
+const damageType = 2; // 1 = fire, 2 = lit, 3 = cold
+const skillType = 0; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
 
 
-const critChance = new Big(100);
 let strength, intelligence, willpower, dexterity;
 let additiveBucket;
 let vulnerable;
@@ -36,16 +47,16 @@ const response = await axios.get(`https://planners.maxroll.gg/profiles/d4/${prof
 let best;
 const allResults = {};
 for (const profile of JSON.parse(response.data.data).profiles) {
-    const critChance = new Big(100);
-    strength =stats[d4Class]['strength'];
-    intelligence =stats[d4Class]['intelligence'] + intGearBonus;
-    willpower =stats[d4Class]['willpower'];
-    dexterity =stats[d4Class]['dexterity'];
+    strength =stats[d4Class]['strength'] + (ignoreGearBonuses && strGearBonus);
+    intelligence =stats[d4Class]['intelligence'] + (ignoreGearBonuses && intGearBonus);
+    willpower =stats[d4Class]['willpower'] + (ignoreGearBonuses && willGearBonus);
+    dexterity =stats[d4Class]['dexterity'] + (ignoreGearBonuses && dexGearBonus);
     
-    additiveBucket = new Big(1.535);
-    vulnerable = new Big(1.2).add(vulnGear);
-    critDamage = new Big(0.50);
+    additiveBucket = new Big(1).add(new Big(!ignoreGearBonuses ? additiveGear : 0).div(100));
+    vulnerable = new Big(1.2).add(new Big(!ignoreGearBonuses ? vulnGear : 0).div(100));
+    critDamage = new Big(0.50).add(new Big(!ignoreGearBonuses ? critGear : 0).div(100));
     globalMultipliers = [];
+
     console.log(profile.name);
     const profileDamage = calculateDamage(profile);
     if (!best || best.dmg < profileDamage.total) {
@@ -63,7 +74,7 @@ const csv = await json2csv(Object.keys(allResults).map(e => {
         ...allResults[e]
     }
 }));
-fs.writeFileSync('results.csv', csv, {encoding: 'utf-8'});
+fs.writeFileSync(testName + '.csv', csv, {encoding: 'utf-8'});
 
 
 function calculateDamage(profile) {
@@ -76,6 +87,8 @@ function calculateDamage(profile) {
         applySecondaryRareBonuses(paragon, i++); // add the secondary bonus of rare nodes we now meet the requirements of
     }
 
+    let critChance = new Big(dexterity).times(.02).plus(5).plus(!ignoreGearBonuses ? critChanceGear : 0); //5% baseline + .02% per dex
+    critChance = new Big(Math.min(100, critChance.plus(alwaysCrit ? 100 : 0).toNumber()));
     const mainStatMulti = new Big(eval(stats[d4Class]['main'])).div(100).div(10).plus(1);
     const critMulti = new Big(1).plus(critDamage.times(critChance.div(100)));
     const baseMulti = mainStatMulti.times(vulnerable).times(critMulti).times(additiveBucket);
