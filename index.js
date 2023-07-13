@@ -4,14 +4,16 @@ import stats from './base_stats.js';
 import Big from 'big.js';
 import { json2csv } from 'json-2-csv';
 
-const testName = 'arc1';
-const buildLink = 'https://maxroll.gg/d4/planner/uyg80uxn'; // arc lash
+const testName = 'conj';
+const buildLink = 'https://maxroll.gg/d4/planner/6x6e0o4d'; // arc lash
 //const buildLink = 'https://maxroll.gg/d4/planner/uz2w0zot'; // ice shard
 //const buildLink = 'https://maxroll.gg/d4/planner/vx640zvd'; // v4v compare
 //const buildLink = 'https://maxroll.gg/d4/planner/a4710anu'; // other ice shards
 //const buildLink = 'https://maxroll.gg/d4/planner/a6l40nt6'; // xps ice shards
 //const buildLink = 'https://maxroll.gg/d4/planner/m36v0zu5'; // has more blizzard builds
 //const buildLink = 'https://maxroll.gg/d4/planner/o2150ney'; // blizzard only
+//const buildLink = 'https://maxroll.gg/d4/planner/o36lk01r'; // misanth
+//const buildLink = 'https://maxroll.gg/d4/planner/7j2e6041'; // conj
 let globalMultipliers = [];
 
 const ignoreGearBonuses = false;
@@ -19,16 +21,16 @@ const alwaysCrit = false;
 const intGearBonus = 196;
 const willGearBonus = 0;
 const strGearBonus = 0;
-const dexGearBonus = 0;
+const dexGearBonus = 110;
 
-const vulnGear = 86.2; 
-const critGear = 200.4;
+const vulnGear = 90; 
+const critGear = 200;
 const critChanceGear = 31.7;
 const additiveGear = 0;
 
 const d4Class = 'sorc';
 const damageType = 2; // 1 = fire, 2 = lit, 3 = cold
-const skillType = 0; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
+const skillType = 3; // 0 = basic, 1 = core, 3 = conj, 4 = mastery
 
 
 let strength, intelligence, willpower, dexterity;
@@ -47,10 +49,10 @@ const response = await axios.get(`https://planners.maxroll.gg/profiles/d4/${prof
 let best;
 const allResults = {};
 for (const profile of JSON.parse(response.data.data).profiles) {
-    strength =stats[d4Class]['strength'] + (ignoreGearBonuses && strGearBonus);
-    intelligence =stats[d4Class]['intelligence'] + (ignoreGearBonuses && intGearBonus);
-    willpower =stats[d4Class]['willpower'] + (ignoreGearBonuses && willGearBonus);
-    dexterity =stats[d4Class]['dexterity'] + (ignoreGearBonuses && dexGearBonus);
+    strength =stats[d4Class]['strength'] + (!ignoreGearBonuses && strGearBonus);
+    intelligence =stats[d4Class]['intelligence'] + (!ignoreGearBonuses && intGearBonus);
+    willpower =stats[d4Class]['willpower'] + (!ignoreGearBonuses && willGearBonus);
+    dexterity =stats[d4Class]['dexterity'] + (!ignoreGearBonuses && dexGearBonus);
     
     additiveBucket = new Big(1).add(new Big(!ignoreGearBonuses ? additiveGear : 0).div(100));
     vulnerable = new Big(1.2).add(new Big(!ignoreGearBonuses ? vulnGear : 0).div(100));
